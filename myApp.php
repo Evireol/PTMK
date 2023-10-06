@@ -34,7 +34,7 @@ class EmployeeDirectory {
     }
 }
 
-
+  
 if (count($argv) < 2) {
     die("Использование: php myApp.php 1\n");
 }
