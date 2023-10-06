@@ -103,6 +103,38 @@ class EmployeeDirectory {
         }
     }
 
+    public function generateAndInsertEmployees($count) {
+        // Генерация и вставка случайных данных для указанного количества сотрудников
+        $sql = "INSERT INTO employees (full_name, birth_date, gender) VALUES (:full_name, :birth_date, :gender)";
+        
+        try {
+            $stmt = $this->db->prepare($sql);
+            
+            $fullNames = ["Jenya Smirnov", "Mary Chehova", "Daniil Brovov", "Lidia Dfsnecova", "Michail Davidov", "Fedya Fedorov", "Vanya Vasiliev", "Petya Petrov", "Sasha Sidorov"];
+            $genders = ["Male", "Female"];
+            
+            for ($i = 0; $i < $count; $i++) {
+                $randomFullName = $fullNames[array_rand($fullNames)];
+                $randomBirthDate = date('Y-m-d', strtotime("-" . rand(18, 65) . " years"));
+                $randomGender = $genders[array_rand($genders)];
+                
+                $stmt->bindParam(':full_name', $randomFullName);
+                $stmt->bindParam(':birth_date', $randomBirthDate);
+                $stmt->bindParam(':gender', $randomGender);
+                
+                $stmt->execute();
+                
+                if (($i + 1) % 1000 === 0) {
+                    echo "Добавлено " . ($i + 1) . " записей.\n";
+                }
+            }
+            
+            echo "Заполнение базы данных завершено.\n";
+        } catch (PDOException $e) {
+            die("Ошибка при вставке записей: " . $e->getMessage());
+        }
+    }
+
 }
 
 if (count($argv) < 2) {
@@ -128,8 +160,12 @@ if ($mode === 1) {
 
     $employeeDirectory->insertEmployee($full_name, $birth_date, $gender);
     $employeeDirectory->calculateAge($birth_date);
+
 } elseif ($mode === 3) {
-$employeeDirectory->displayEmployees();
+    $employeeDirectory->displayEmployees();
+
+} elseif ($mode === 4) {
+    $employeeDirectory->generateAndInsertEmployees(10);
 
 } else {
     die("Неверный режим. Поддерживаемые режимы: 1 (создание таблицы), 2 (создание записи сотрудника).\n");
