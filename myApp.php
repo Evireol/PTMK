@@ -65,6 +65,43 @@ class EmployeeDirectory {
         echo $interval->format('Возраст: %y лет');
     }
 
+    public function displayEmployees() {
+
+        $sql = "SELECT full_name, birth_date, gender FROM employees ORDER BY full_name";
+    
+        try {
+            // Подготовка запроса
+            $stmt = $this->db->prepare($sql);
+    
+            $stmt->execute();
+    
+            // Извлечение всех строк результата
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+            if (empty($result)) {
+                echo "Справочник сотрудников пуст.\n";
+                return;
+            }
+    
+            // Вывести данные о сотрудниках
+            foreach ($result as $employee) {
+                $full_name = $employee['full_name'];
+                $birth_date = $employee['birth_date'];
+                $gender = $employee['gender'];
+
+                $age = date('Y') - date('Y', strtotime($birth_date));
+    
+                echo "-----------------------\n";
+                echo "ФИО: " . $full_name . "\n";
+                echo "Дата рождения: " . $birth_date . "\n";
+                echo "Пол: " . $gender . "\n";
+                echo "Возраст: " . $age . " лет\n";
+                echo "-----------------------\n";
+            }
+        } catch (PDOException $e) {
+            die("Ошибка при получении данных: " . $e->getMessage());
+        }
+    }
 
 }
 
@@ -91,6 +128,9 @@ if ($mode === 1) {
 
     $employeeDirectory->insertEmployee($full_name, $birth_date, $gender);
     $employeeDirectory->calculateAge($birth_date);
+} elseif ($mode === 3) {
+$employeeDirectory->displayEmployees();
+
 } else {
     die("Неверный режим. Поддерживаемые режимы: 1 (создание таблицы), 2 (создание записи сотрудника).\n");
 }
