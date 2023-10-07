@@ -70,12 +70,11 @@ class EmployeeDirectory {
         $sql = "SELECT full_name, birth_date, gender FROM employees ORDER BY full_name";
     
         try {
-            // Подготовка запроса
+
             $stmt = $this->db->prepare($sql);
     
             $stmt->execute();
     
-            // Извлечение всех строк результата
             $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
             if (empty($result)) {
@@ -83,7 +82,6 @@ class EmployeeDirectory {
                 return;
             }
     
-            // Вывести данные о сотрудниках
             foreach ($result as $employee) {
                 $full_name = $employee['full_name'];
                 $birth_date = $employee['birth_date'];
@@ -104,7 +102,7 @@ class EmployeeDirectory {
     }
 
     public function generateAndInsertEmployees($count) {
-        // Генерация и вставка случайных данных для указанного количества сотрудников
+
         $sql = "INSERT INTO employees (full_name, birth_date, gender) VALUES (:full_name, :birth_date, :gender)";
         
         try {
@@ -132,6 +130,43 @@ class EmployeeDirectory {
             echo "Заполнение базы данных завершено.\n";
         } catch (PDOException $e) {
             die("Ошибка при вставке записей: " . $e->getMessage());
+        }
+    }
+
+    public function selectMaleEmployeesWithLastNameStartingWithF() {
+
+        $sql = "SELECT full_name, birth_date, gender FROM employees WHERE gender = 'Male' AND full_name LIKE 'F%'";
+    
+        try {
+            // Замер времени выполнения запроса
+            $start_time = microtime(true);
+    
+            $stmt = $this->db->prepare($sql);
+    
+            $stmt->execute();
+    
+            // Извлечь результаты
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+            // Замерка времени выполнения
+            $end_time = microtime(true);
+            $execution_time = ($end_time - $start_time);
+    
+            if (empty($result)) {
+                echo "Нет сотрудников с полом 'Мужской' и фамилией, начинающейся с 'F'.\n";
+            } else {
+                echo "Результаты запроса:\n";
+                foreach ($result as $employee) {
+                    echo "ФИО: " . $employee['full_name'] . "\n";
+                    echo "Дата рождения: " . $employee['birth_date'] . "\n";
+                    echo "Пол: " . $employee['gender'] . "\n";
+                    echo "-----------------------\n";
+                }
+            }
+    
+            echo "Время выполнения запроса: " . $execution_time . " секунд.\n";
+        } catch (PDOException $e) {
+            die("Ошибка при выполнении запроса: " . $e->getMessage());
         }
     }
 
@@ -166,6 +201,9 @@ if ($mode === 1) {
 
 } elseif ($mode === 4) {
     $employeeDirectory->generateAndInsertEmployees(10);
+
+} elseif ($mode === 5) {
+    $employeeDirectory->selectMaleEmployeesWithLastNameStartingWithF();
 
 } else {
     die("Неверный режим. Поддерживаемые режимы: 1 (создание таблицы), 2 (создание записи сотрудника).\n");
