@@ -6,10 +6,14 @@ class EmployeeDirectory {
         $dsn = 'mysql:host=localhost;dbname=PTMK;charset=utf8';
         $username = 'root';
         $password = '';
-
+    
+        $options = [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => true, // Включение буферизации запросов
+        ];
+    
         try {
-            $this->db = new PDO($dsn, $username, $password);
-            $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $this->db = new PDO($dsn, $username, $password, $options);
         } catch (PDOException $e) {
             die("Ошибка подключения к базе данных: " . $e->getMessage());
         }
@@ -132,30 +136,31 @@ class EmployeeDirectory {
             die("Ошибка при вставке записей: " . $e->getMessage());
         }
     }
+    
 
-    public function selectMaleEmployeesWithLastNameStartingWithF() {
+    public function selectMaleEmployeesWithLastNameStartingWithF1() {
+
+        $start_time = microtime(true);
 
         $sql = "SELECT full_name, birth_date, gender FROM employees WHERE gender = 'Male' AND full_name LIKE 'F%'";
     
         try {
             // Замер времени выполнения запроса
-            $start_time = microtime(true);
+            
     
             $stmt = $this->db->prepare($sql);
     
             $stmt->execute();
     
             // Извлечь результаты
-            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-            // Замерка времени выполнения
-            $end_time = microtime(true);
-            $execution_time = ($end_time - $start_time);
+            $result = $this->db->prepare($sql);
+            $result->execute();
     
             if (empty($result)) {
                 echo "Нет сотрудников с полом 'Мужской' и фамилией, начинающейся с 'F'.\n";
             } else {
                 echo "Результаты запроса:\n";
+                echo "-----------------------\n";
                 foreach ($result as $employee) {
                     echo "ФИО: " . $employee['full_name'] . "\n";
                     echo "Дата рождения: " . $employee['birth_date'] . "\n";
@@ -164,17 +169,79 @@ class EmployeeDirectory {
                 }
             }
     
+            // Замерка времени выполнения
+            $end_time = microtime(true);
+            $execution_time = ($end_time - $start_time);
             echo "Время выполнения запроса: " . $execution_time . " секунд.\n";
         } catch (PDOException $e) {
             die("Ошибка при выполнении запроса: " . $e->getMessage());
         }
     }
 
+    public function selectMaleEmployeesWithLastNameStartingWithF2() {
+        
+        // Замер времени выполнения запроса
+        $start_time = microtime(true);
+
+
+        $cache_file = 'male_employees_starting_with_f.cache';
+
+        if (file_exists($cache_file) && time() - filemtime($cache_file) < 3600) {
+            // Если есть кэш и он не устарел (1 час), используем сохраненные результаты
+            echo "Результаты из кэша:\n";
+
+            echo file_get_contents($cache_file);
+                        // Замерить время выполнения
+        } else {
+
+            $sql = "SELECT full_name, birth_date, gender FROM employees WHERE gender = 'Male' AND full_name LIKE 'F%'";
+    
+            try {
+                $stmt = $this->db->prepare($sql);
+    
+                $stmt->execute();
+    
+                $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+                if (empty($result)) {
+                    echo "Нет сотрудников с полом 'Мужской' и фамилией, начинающейся с 'F'.\n";
+                } else {
+                    echo "Результаты запроса:\n";
+                    foreach ($result as $employee) {
+                        echo "ФИО: " . $employee['full_name'] . "\n";
+                        echo "Дата рождения: " . $employee['birth_date'] . "\n";
+                        echo "Пол: " . $employee['gender'] . "\n";
+                        echo "-----------------------\n";
+                    }
+                }
+
+                // Кэширование в файл
+                ob_start();
+                if (!empty($result)) {
+                    foreach ($result as $employee) {
+                        echo "ФИО: " . $employee['full_name'] . "\n";
+                        echo "Дата рождения: " . $employee['birth_date'] . "\n";
+                        echo "Пол: " . $employee['gender'] . "\n";
+                        echo "-----------------------\n";
+                    }
+                }
+                $cached_data = ob_get_clean();
+                file_put_contents($cache_file, $cached_data);
+    
+            } catch (PDOException $e) {
+                die("Ошибка при выполнении запроса: " . $e->getMessage());
+            }
+        }
+
+        $end_time = microtime(true);
+        $execution_time = ($end_time - $start_time);
+        echo "Время выполнения запроса: " . $execution_time . " секунд.\n";
+
+    }
+    
+    
 }
 
-if (count($argv) < 2) {
-    die("Использование: php myApp.php [режим] [дополнительные аргументы]\n");
-}
 
 $mode = (int)$argv[1];
 
@@ -183,11 +250,9 @@ $employeeDirectory = new EmployeeDirectory();
 if ($mode === 1) {
     // Режим 1: Создание таблицы справочника сотрудников
     $employeeDirectory->createEmployeeTable();
+    
 } elseif ($mode === 2) {
     // Режим 2: Создание записи сотрудника
-    if (count($argv) < 5) {
-        die("Использование: php myApp.php 2 [ФИО] [дата рождения] [пол]\n");
-    }
 
     $full_name = $argv[2];
     $birth_date = $argv[3];
@@ -200,12 +265,27 @@ if ($mode === 1) {
     $employeeDirectory->displayEmployees();
 
 } elseif ($mode === 4) {
-    $employeeDirectory->generateAndInsertEmployees(10);
+    $employeeDirectory->generateAndInsertEmployees(1000000);
 
 } elseif ($mode === 5) {
-    $employeeDirectory->selectMaleEmployeesWithLastNameStartingWithF();
+
+    //$employeeDirectory->selectMaleEmployeesWithLastNameStartingWithF1();
+    $employeeDirectory->selectMaleEmployeesWithLastNameStartingWithF2();
+
+
+    //Замеры до оптимизации - selectMaleEmployeesWithLastNameStartingWithF1
+    //1.4007959365845 секунд.
+    //1.2793788909912 секунд
+    // 1.2656350135803 секунд
+
+    //Замеры после оптимизации - selectMaleEmployeesWithLastNameStartingWithF2
+    //0.27020692825317 секунд
+    //0.27807784080505 секунд
+    //0.29023218154907 секунд
+    //0.27140593528748 секунд
+
 
 } else {
-    die("Неверный режим. Поддерживаемые режимы: 1 (создание таблицы), 2 (создание записи сотрудника).\n");
+    die("Неверный режим. Поддерживаемые режимы: 1 (создание таблицы), 2 (создание записи сотрудника), 3 (Отображение записей), 4 (Генерирование записей), 5 (Выбор мужчин с Фамилией начинающейся на F).\n");
 }
 ?>
