@@ -38,4 +38,23 @@ PowerShell : **myApp 5** - выборки из таблицы по критер�
 
 ## Результаты :
 
+**myApp 1**:
+
+![result](https://github.com/Evireol/PTMK/blob/main/pngForReadme/result%201.png)
+
+**myApp 4**
+
+![result](https://github.com/Evireol/PTMK/blob/main/pngForReadme/result%204.png)
+
+**myApp 3**
+
+![result](https://github.com/Evireol/PTMK/blob/main/pngForReadme/result%203.png)
+
+**myApp 5** без оптимизации
+
 ![result](https://github.com/Evireol/PTMK/blob/main/pngForReadme/result5-1.png)
+
+**myApp 5** с оптимизацией
+
+![result](https://github.com/Evireol/PTMK/blob/main/pngForReadme/result5-2.png)
+
